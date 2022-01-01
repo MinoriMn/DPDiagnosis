@@ -9,6 +9,7 @@ import SwiftUI
 
 struct TopTabBar: View {
     var body: some View {
+        NavigationView {
             TabView {
                 DementiaPossibilityDiagnosisView()
                     .tabItem {
@@ -26,6 +27,7 @@ struct TopTabBar: View {
                 }.tag(2)
             }
         }
+    }
 }
 
 struct TopTabBar_Previews: PreviewProvider {

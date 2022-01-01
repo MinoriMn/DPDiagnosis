@@ -8,8 +8,23 @@
 import SwiftUI
 
 struct DementiaPreventionView: View {
+    @ObservedObject var viewModel = DementiaPreventionViewModel()
+
     var body: some View {
-        Text("DementiaPreventionView")
+        List {
+            Section (header: Text("AA")) {
+                ForEach(viewModel.preventionInfos, id: \.self) { info in
+                    NavigationLink(destination: PreventionDetailView()) {
+                        Text(info.description)
+                    }
+                }
+            }
+            Section (header: Text("AA")) {
+                ForEach(viewModel.preventionInfos, id: \.self) { info in
+                    Text(info.description)
+                }
+            }
+        }
     }
 }
 
