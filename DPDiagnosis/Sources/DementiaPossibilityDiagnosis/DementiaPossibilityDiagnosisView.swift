@@ -1,26 +1,25 @@
-//
-//  DementiaPossibilityDiagnosisView.swift
-//  DPDiagnosis
-//
-//  Created by 松田尚也 on 2021/11/24.
-//
-
+import Combine
 import SwiftUI
 
 struct DementiaPossibilityDiagnosisView: View {
+    @ObservedObject var viewModel = DementiaPossibilityDiagnosisViewModel()
+
+    private var cancellables: [AnyCancellable] = []
+
+    init() {
+        bind()
+    }
+
     var body: some View {
         ScrollView(content: {
-            Text("DementiaPossibilityDiagnosisView")
-            Text("DementiaPossibilityDiagnosisView")
-            Text("DementiaPossibilityDiagnosisView")
-            Text("DementiaPossibilityDiagnosisView")
-            Text("DementiaPossibilityDiagnosisView")
-            Text("DementiaPossibilityDiagnosisView")
-            Text("DementiaPossibilityDiagnosisView")
-            Text("DementiaPossibilityDiagnosisView")
-            Text("DementiaPossibilityDiagnosisView")
-            Text("DementiaPossibilityDiagnosisView")
+            ForEach(viewModel.heartRate, id: \.self) { hr in
+                Text("\(hr.endDatetime) \(hr.value)")
+            }
         })
+    }
+
+    private func bind() {
+        let _ = viewModel.transform(input: .init())
     }
 }
 
