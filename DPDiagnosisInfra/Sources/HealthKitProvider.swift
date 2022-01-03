@@ -6,13 +6,18 @@ final class HealthKitProvider {
 
     init() {}
 
-    public func requestAuthorization(identifiers: [HKQuantityTypeIdentifier]) -> AnyPublisher<Bool, Error> {
+    public func requestAuthorization(quantityIdentifiers: [HKQuantityTypeIdentifier], categoryIdentifiers: [HKCategoryTypeIdentifier]) -> AnyPublisher<Bool, Error> {
         guard HKHealthStore.isHealthDataAvailable() else {
             return Fail(error: ProviderError.unavailableOnDevice).eraseToAnyPublisher()
         }
 
-        let quantityTypes = identifiers.map { identifier in
+        let quantityTypes = quantityIdentifiers.map { identifier in
             HKQuantityType.quantityType(forIdentifier: identifier)
+        }
+        .compactMap { $0 }
+
+        let categoryTypes = categoryIdentifiers.map { identifier in
+            HKObjectType.categoryType(forIdentifier: identifier)
         }
         .compactMap { $0 }
 
@@ -20,11 +25,11 @@ final class HealthKitProvider {
             return Fail(error: ProviderError.couldNotReadyType).eraseToAnyPublisher()
         }
 
-        let readTypes = Set(quantityTypes)
+        let readTypes = Set(quantityTypes + categoryTypes)
 
         let publisher = PassthroughSubject<Bool, Error>()
 
-        self.healthStore.requestAuthorization(toShare: [], read: readTypes) { authSuccess, error in
+        healthStore.requestAuthorization(toShare: [], read: readTypes) { authSuccess, error in
             guard error == nil else {
                 publisher.send(completion: .failure(error ?? ProviderError.notAllowedAccessData))
                 return
@@ -41,7 +46,7 @@ final class HealthKitProvider {
     }
 
     public func getHeartRate(from: Date, to: Date) -> AnyPublisher<[HeartRate], Error> {
-        getData(identifier: .heartRate, from: from, to: to)
+        getData(quantityIdentifier: .heartRate, from: from, to: to)
             .map { items -> [HeartRate] in
                 items.map { item -> HeartRate in
                     .init(
@@ -55,15 +60,49 @@ final class HealthKitProvider {
             .eraseToAnyPublisher()
     }
 
-    private func getData(identifier: HKQuantityTypeIdentifier, from: Date, to: Date) -> AnyPublisher<[HKQuantitySample], Error> {
-        Future<[HKQuantitySample], Error> { promise in
-            guard let sampleType = HKSampleType.quantityType(forIdentifier: identifier) else {
-                promise(.failure(ProviderError.couldNotReadyType))
-                return
+    public func getSleepAnalysis(from: Date, to: Date) -> AnyPublisher<[SleepAnalysis], Error> {
+        getData(categoryIdentifier: .sleepAnalysis, from: from, to: to)
+            .map { items -> [SleepAnalysis] in
+                items.map { item -> SleepAnalysis in
+                        .init(
+                            id: item.uuid.uuidString,
+                            startDatetime: item.startDate,
+                            endDatetime: item.endDate,
+                            sleepStatus: SleepStatus(rawValue: item.value)
+                        )
+                }
             }
+            .eraseToAnyPublisher()
+    }
 
+    private func getData(quantityIdentifier: HKQuantityTypeIdentifier, from: Date, to: Date) -> AnyPublisher<[HKQuantitySample], Error> {
+        guard let sampleType = HKSampleType.quantityType(forIdentifier: quantityIdentifier) else {
+            return Fail(error: ProviderError.couldNotReadyType).eraseToAnyPublisher()
+        }
+
+        return getData(identifier: sampleType, from: from, to: to)
+            .map { results -> [HKQuantitySample] in
+                results as? [HKQuantitySample] ?? []
+            }
+            .eraseToAnyPublisher()
+    }
+
+    public func getData(categoryIdentifier: HKCategoryTypeIdentifier, from: Date, to: Date) -> AnyPublisher<[HKCategorySample], Error> {
+        guard let sampleType = HKSampleType.categoryType(forIdentifier: categoryIdentifier) else {
+            return Fail(error: ProviderError.couldNotReadyType).eraseToAnyPublisher()
+        }
+
+        return getData(identifier: sampleType, from: from, to: to)
+            .map { results -> [HKCategorySample] in
+                results as? [HKCategorySample] ?? []
+            }
+            .eraseToAnyPublisher()
+    }
+
+    private func getData(identifier: HKSampleType, from: Date, to: Date) -> AnyPublisher<[HKSample]?, Error> {
+        Future<[HKSample]?, Error> { promise in
             let query = HKSampleQuery(
-                sampleType: sampleType,
+                sampleType: identifier,
                 predicate: HKQuery.predicateForSamples(withStart: from, end: to, options: []),
                 limit: HKObjectQueryNoLimit,
                 sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: true)]
@@ -73,8 +112,8 @@ final class HealthKitProvider {
                     return
                 }
 
-                let sampleResults: [HKQuantitySample] = results as? [HKQuantitySample] ?? []
-                promise(.success(sampleResults))
+
+                promise(.success(results))
                 return
             }
             self.healthStore.execute(query)

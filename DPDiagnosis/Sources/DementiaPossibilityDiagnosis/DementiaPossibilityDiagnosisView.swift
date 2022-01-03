@@ -12,8 +12,11 @@ struct DementiaPossibilityDiagnosisView: View {
 
     var body: some View {
         ScrollView(content: {
-            ForEach(viewModel.heartRate, id: \.self) { hr in
-                Text("\(hr.endDatetime) \(hr.value)")
+//            ForEach(viewModel.heartRate, id: \.self) { hr in
+//                Text("\(hr.endDatetime) \(hr.value)")
+//            }
+            ForEach(viewModel.sleepAnalysis, id: \.self) { sa in
+                Text("\(sa.id)\n\(sa.startDatetime)\n\(sa.endDatetime)\n\(sa.sleepStatus.description())\n")
             }
         })
     }
