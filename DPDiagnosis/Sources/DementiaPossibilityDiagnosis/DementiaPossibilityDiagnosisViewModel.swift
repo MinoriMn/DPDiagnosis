@@ -2,8 +2,7 @@ import Combine
 import SwiftUI
 
 class DementiaPossibilityDiagnosisViewModel: ObservableObject {
-    @Published var heartRate: [HeartRate] = []
-    @Published var sleepAnalysis: [SleepAnalysis] = []
+    @Published var diagnosisResult: DiagnosisResult = .init(date: Date(), diagnosis: .noResult)
 
     private var cancellables: [AnyCancellable] = []
 
@@ -18,25 +17,19 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
         cancellables.removeAll()
 
         repository.requestAuthorization()
-            .flatMap { [weak self] _ -> AnyPublisher<([HeartRate], [SleepAnalysis]), Error> in
-                guard let self = self, let from = Calendar.current.date(byAdding: .day, value: -1, to: Date()) else { fatalError() /*TODO*/}
+            .flatMap { [weak self] _ -> AnyPublisher<DiagnosisResult, Error> in
+                guard let self = self else { fatalError() /*TODO*/}
 
-                let heartRatePublisher = self.repository.getHeartRate(from: from, to: Date())
-                let sleepAnalysisPublisher = self.repository.getSleepAnalysis(from: from, to: Date())
-
-                return Publishers.CombineLatest(heartRatePublisher, sleepAnalysisPublisher)
-                    .eraseToAnyPublisher()
+                return self.repository.getDPDiagnosisResult(date: Date())
             }
-            .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { completion in
                 switch completion {
                 case .finished: break
                 case .failure(let error):
                     print("DPDiagnosisError: \(error)")
                 }
-            }, receiveValue: { [weak self] (heartRate, sleepAnalysis) in
-                self?.heartRate = heartRate
-                self?.sleepAnalysis = sleepAnalysis
+            }, receiveValue: { [weak self] diagnosisResult in
+                self?.diagnosisResult = diagnosisResult
             })
             .store(in: &cancellables)
 
