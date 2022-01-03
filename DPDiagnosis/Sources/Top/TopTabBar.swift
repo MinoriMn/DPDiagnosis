@@ -8,6 +8,10 @@
 import SwiftUI
 
 struct TopTabBar: View {
+    @ObservedObject var viewModel = TopViewModel()
+
+    init() {}
+
     var body: some View {
         NavigationView {
             TabView {

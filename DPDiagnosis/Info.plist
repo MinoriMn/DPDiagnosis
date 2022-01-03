@@ -20,6 +20,12 @@
 	<string>1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>update data to diagnose dementia possibility judgement, forcusing on circadian rhythm of heart rate transition. (not to record as experimental data)</string>
+	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+	<string>record data to diagnose dementia possibility judgement, forcusing on circadian rhythm of heart rate transition. (not to record as experimental data)</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>read data to diagnose dementia possibility judgement, forcusing on circadian rhythm of heart rate transition. (not to record as experimental data)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
