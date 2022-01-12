@@ -3,7 +3,7 @@ import SwiftUI
 
 final class DementiaPossibilityDiagnosisRepository{
     private let healthKitProvider = HealthKitProvider()
-    private let diagnosisAPI = DPDiagnosisAPI()
+    private let diagnosisAPI = DPDiagnosisModel()
 
     private var resultList: DiagnosisResultList
 
@@ -64,7 +64,7 @@ final class DementiaPossibilityDiagnosisRepository{
                     return Just(result).setFailureType(to: Error.self).eraseToAnyPublisher()
                 }
 
-                return self.diagnosisAPI.dementiaPossibilityDiagnosis(heartRate: heartRate)
+                return self.diagnosisAPI.dementiaPossibilityDiagnosis(heartRate: heartRate, progressPublisher: nil)
                     .map { [weak self] apiDiagnosisResult -> DiagnosisResult in
                         let result = DiagnosisResult(date: today, diagnosis: apiDiagnosisResult)
                         self?.resultList.addResult(result: result)

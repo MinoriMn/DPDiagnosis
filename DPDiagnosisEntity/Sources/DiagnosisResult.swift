@@ -2,9 +2,9 @@ import SwiftUI
 
 struct DiagnosisResult: Codable, Hashable {
     let date: Date
-    let diagnosis: DPDiagnosisAPI.DiagnosisResult
+    let diagnosis: DPDiagnosisModel.DiagnosisResult
 
-    init(date: Date, diagnosis: DPDiagnosisAPI.DiagnosisResult) {
+    init(date: Date, diagnosis: DPDiagnosisModel.DiagnosisResult) {
         self.date = date
         self.diagnosis = diagnosis
     }
