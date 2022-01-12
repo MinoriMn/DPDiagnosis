@@ -21,6 +21,8 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
                 guard let self = self else { fatalError() /*TODO*/}
 
                 return self.repository.getDPDiagnosisResult(date: Date())
+                    .receive(on: DispatchQueue.main)
+                    .eraseToAnyPublisher()
             }
             .sink(receiveCompletion: { completion in
                 switch completion {
