@@ -4,6 +4,7 @@ import SwiftUI
 final class DementiaPossibilityDiagnosisRepository{
     private let healthKitProvider = HealthKitProvider()
     private let diagnosisAPI = DPDiagnosisModel()
+    private let realmManager = RealmManager.shared
 
     private var resultList: DiagnosisResultList
 
@@ -49,7 +50,7 @@ final class DementiaPossibilityDiagnosisRepository{
 
                         for _hr in sordtedHrs {
                             hr += _hr
-                            print("\(_hr.first?.endDatetime.description(with: .current)): \(_hr.last?.endDatetime.description(with: .current)): \(_hr.count)") //DEBUG
+//                            print("\(_hr.first?.endDatetime.description(with: .current)): \(_hr.last?.endDatetime.description(with: .current)): \(_hr.count)") //DEBUG
                         }
 
                         return hr
@@ -58,7 +59,7 @@ final class DementiaPossibilityDiagnosisRepository{
             }
             .flatMap { [weak self] heartRate -> AnyPublisher<DiagnosisResult, Error> in
                 guard let self = self else { fatalError() /*TODO*/ }
-                guard heartRate.count > 30 else { // TODO: 最低限必要なデータ数を決める
+                guard heartRate.count > 15 else { // TODO: 最低限必要なデータ数を決める
                     let result = DiagnosisResult(date: today, diagnosis: .noResult)
                     self.resultList.addResult(result: result)
                     return Just(result).setFailureType(to: Error.self).eraseToAnyPublisher()
@@ -75,6 +76,10 @@ final class DementiaPossibilityDiagnosisRepository{
             .eraseToAnyPublisher()
     }
 
+    private func setDPDiagnosisResultRealmCache() {
+        
+    }
+
     public func getHeartRate(from: Date, to: Date) -> AnyPublisher<[HeartRate], Error> {
         healthKitProvider.getHeartRate(from: from, to: to)
     }
@@ -84,12 +89,12 @@ final class DementiaPossibilityDiagnosisRepository{
     }
 
     public func getTheDayAsleepAnalysis(date: Date) -> AnyPublisher<[SleepAnalysis], Error> {
-        // (入力された日付 - 1) 00:00:00 ~ (入力された日付 + 1) 00:00:00 のデータで判定する
+        // (入力された日付 - 1) 12:00:00 ~ (入力された日付 + 1) 12:00:00 のデータで判定する
         let calendar = Calendar(identifier: .gregorian)
         let today = calendar.startOfDay(for: date)
 
-        if let from = Calendar.current.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: date)),
-           let to = Calendar.current.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: date)) {
+        if let from = Calendar.current.date(byAdding: .hour, value: -12, to: calendar.startOfDay(for: date)),
+           let to = Calendar.current.date(byAdding: .hour, value: 12, to: calendar.startOfDay(for: date)) {
             return getSleepAnalysis(from: from, to: to)
                 .map { sleepAnalysis -> [SleepAnalysis] in
                     let longestInBed = sleepAnalysis

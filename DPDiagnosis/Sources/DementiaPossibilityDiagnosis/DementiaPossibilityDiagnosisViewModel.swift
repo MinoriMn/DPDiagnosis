@@ -2,7 +2,7 @@ import Combine
 import SwiftUI
 
 class DementiaPossibilityDiagnosisViewModel: ObservableObject {
-    @Published var diagnosisResult: DiagnosisResult = .init(date: Date(), diagnosis: .noResult)
+    @Published var diagnosisResults: [DiagnosisResult] = []
 
     private var cancellables: [AnyCancellable] = []
 
@@ -20,7 +20,15 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
             .flatMap { [weak self] _ -> AnyPublisher<DiagnosisResult, Error> in
                 guard let self = self else { fatalError() /*TODO*/}
 
-                return self.repository.getDPDiagnosisResult(date: Date())
+                let today = Date()
+                var publishers: [AnyPublisher<DiagnosisResult, Error>] = []
+                for i in 0..<20 {
+                    if let date = Calendar.current.date(byAdding: .day, value: -i, to: today) { //
+                        publishers.append(self.repository.getDPDiagnosisResult(date: date))
+                    }
+                }
+
+                return Publishers.MergeMany(publishers)
                     .receive(on: DispatchQueue.main)
                     .eraseToAnyPublisher()
             }
@@ -31,7 +39,7 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
                     print("DPDiagnosisError: \(error)")
                 }
             }, receiveValue: { [weak self] diagnosisResult in
-                self?.diagnosisResult = diagnosisResult
+                self?.diagnosisResults.append(diagnosisResult)
             })
             .store(in: &cancellables)
 

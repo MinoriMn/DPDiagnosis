@@ -12,10 +12,9 @@ struct DementiaPossibilityDiagnosisView: View {
 
     var body: some View {
         ScrollView(content: {
-//            ForEach(viewModel.heartRate, id: \.self) { hr in
-//                Text("\(hr.endDatetime) \(hr.value)")
-//            }
-            Text("\(viewModel.diagnosisResult.date): \(viewModel.diagnosisResult.diagnosis.rawValue)")
+            ForEach(viewModel.diagnosisResults, id: \.self) { result in
+                Text("\(DateUtils.stringFromDate(date: result.date, format: "yyyy/MM/dd")): \(result.diagnosis.rawValue)")
+            }
         })
     }
 

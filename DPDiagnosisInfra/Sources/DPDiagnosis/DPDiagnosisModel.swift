@@ -41,7 +41,8 @@ final class DPDiagnosisModel {
     }
 
     public func diagnosisWithUCRADD() -> DiagnosisResult {
-        guard let lastCoefficient = coefficientHistory.last?.coefficients else { return .noResult }
+        guard let last = coefficientHistory.last else { return .noResult }
+        let lastCoefficient = last.coefficients
 
         // FIXME:
         var sinAbsSum: Double = 0.0
@@ -77,10 +78,10 @@ extension DPDiagnosisModel {
 
     private func w (matrixI: Int, matrixJ: Int, x: Double, dataIndex: Int) -> Double {
         if matrixI != matrixJ {
-            return 0
+            return 0.0
         } else if matrixI == Const.numCoefficient - 1 {
             // PenaltyFunction.P6
-            return 0
+            return 0.0
         } else {
             // PenaltyFunction.P6
             return Const.lambda * Double(dataIndex) * pow(gammaT(x: x), floor(Double(matrixI) / 2.0) - 1.0) / Double(Const.numCoefficient)
@@ -96,7 +97,7 @@ extension DPDiagnosisModel {
     }
 
     private func sincos(x: Double, coeffIndex: Int) -> Double {
-        if coeffIndex == Const.numCoefficient {
+        if coeffIndex == Const.numCoefficient - 1 {
             return 1.0
         } else if (coeffIndex % 2 == 0) {
             return sin(2.0 * Double.pi * x / Const.periods[coeffIndex / 2])
@@ -106,7 +107,7 @@ extension DPDiagnosisModel {
     }
 
     private func calcCoefficients(hr: HeartRate, dataIndex: Int) {
-        let x = hr.endDatetime.timeIntervalSince(firstHR.endDatetime)
+        let x = hr.endDatetime.timeIntervalSince(firstHR.endDatetime) + 1 //TODO: 最初の時刻が0だと崩壊するので仮に+1秒して対処(RSSEでは30秒間のデータごとに処理していたので問題にならなかった)
         updateMatrix(x: x, hr: hr)
         var copyMatrix = matrix
         for i in 0..<Const.numCoefficient {
@@ -133,8 +134,7 @@ extension DPDiagnosisModel {
     }
 
     private func updateMatrix(x: Double, hr: HeartRate) {
-        DispatchQueue.concurrentPerform(iterations: Const.numCoefficient) { [weak self] (matrixI) in
-            guard let self = self else { fatalError() }
+        for matrixI in 0..<Const.numCoefficient {
             self.sumY[matrixI] += hr.value * sincos(x: x, coeffIndex: matrixI)
             for matrixJ in matrixI..<Const.numCoefficient {
                 if matrixI != Const.numCoefficient - 1, matrixJ != Const.numCoefficient - 1 {
@@ -180,7 +180,6 @@ extension DPDiagnosisModel {
                     inv[i][j] = tmp
                 }
             }
-
             var buf = 1.0 / copy[i][i]
             for j in 0..<dimention {
                 copy[i][j] *= buf
