@@ -117,3 +117,12 @@ extension DementiaPossibilityDiagnosisRepository {
         case calenderFormatError
     }
 }
+
+extension KeyValueStoreModel {
+    public static func diagnosisCacheGenerateId(date rawDate: Date) -> String {
+        let calendar = Calendar(identifier: .gregorian)
+        let date = calendar.startOfDay(for: rawDate)
+
+        return "diagnosis_result_\(date.description)" // FIXME:
+    }
+}
