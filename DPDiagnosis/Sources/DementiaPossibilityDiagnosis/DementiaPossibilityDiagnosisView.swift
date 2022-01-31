@@ -74,30 +74,6 @@ struct DementiaPossibilityDiagnosisView: View {
                 }
             }
         }
-//        ScrollView(content: {
-//            VStack(alignment: .center) {
-//                // 左寄せ
-//                HStack {
-//                    Text("1月1日の記録")
-//                        .font(.title)
-//                    Spacer()
-//                }
-//
-//                // 中央揃え
-////                Text("中央揃え")
-////
-////                // 右寄せ
-////                HStack {
-////                    Spacer()
-////                    Text("右寄せ")
-////                }
-//
-//            }.padding()
-//
-//            ForEach(viewModel.diagnosisResults, id: \.self) { result in
-//                Text("\(DateUtils.stringFromDate(date: result.date, format: "yyyy/MM/dd")): \(result.diagnosis.rawValue)")
-//            }
-//        })
     }
 }
 
