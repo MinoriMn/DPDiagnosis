@@ -17,6 +17,25 @@ final class DementiaPossibilityDiagnosisRepository{
     }
 
     public func getDPDiagnosisResult(date: Date) -> AnyPublisher<DiagnosisResult, Error> {
+        // Realmのキャッシュを確認
+        getDPDiagnosisResultRealmCache(date: date)
+            .catch { [weak self] error -> AnyPublisher<DiagnosisResult, Error> in
+                guard let self = self else { fatalError() /*TODO*/ }
+                print(DateUtils.stringFromDate(date: date, format: "yyyy/MM/dd"), error)
+                // キャッシュがない場合は生成
+                return self.generateDPDiagnosisResult(date: date)
+                    .flatMap { [weak self] result -> AnyPublisher<DiagnosisResult, Error> in
+                        guard let self = self else { fatalError() /*TODO*/ }
+                        return self.setDPDiagnosisResultRealmCache(diagnosisResult: result)
+                            .map { result }
+                            .eraseToAnyPublisher()
+                    }
+                    .eraseToAnyPublisher()
+            }
+            .eraseToAnyPublisher()
+    }
+
+    private func generateDPDiagnosisResult(date: Date) -> AnyPublisher<DiagnosisResult, Error> {
         if let result = resultList.getResult(date: date) {
             return Just(result).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
@@ -50,7 +69,6 @@ final class DementiaPossibilityDiagnosisRepository{
 
                         for _hr in sordtedHrs {
                             hr += _hr
-//                            print("\(_hr.first?.endDatetime.description(with: .current)): \(_hr.last?.endDatetime.description(with: .current)): \(_hr.count)") //DEBUG
                         }
 
                         return hr
@@ -76,8 +94,31 @@ final class DementiaPossibilityDiagnosisRepository{
             .eraseToAnyPublisher()
     }
 
-    private func setDPDiagnosisResultRealmCache() {
-        
+    private func setDPDiagnosisResultRealmCache(diagnosisResult: DiagnosisResult) -> AnyPublisher<Void, Error> {
+        let cache = DiagnosisResultStoreModel(
+            value: [
+                "key": DiagnosisResultStoreModel.diagnosisCacheGenerateId(date: diagnosisResult.date),
+                "diagnosis": diagnosisResult.diagnosis.rawValue,
+                "date": diagnosisResult.date,
+                "version": DPDiagnosisModel.version
+            ]
+        )
+
+        return realmManager.update([cache])
+    }
+
+    private func getDPDiagnosisResultRealmCache(date: Date) -> AnyPublisher<DiagnosisResult, Error> {
+        realmManager.query(targetType: DiagnosisResultStoreModel.self, primaryKey: DiagnosisResultStoreModel.diagnosisCacheGenerateId(date: date))
+            .flatMap { diagnosisCache -> AnyPublisher<DiagnosisResult, Error> in
+                guard let diagnosisCache = diagnosisCache else { return Fail(error: RealmManager.ManagerError.notFoundRecord).eraseToAnyPublisher() }
+                guard diagnosisCache.version == DPDiagnosisModel.version else { return Fail(error: RepositoryError.shouldUpdateResultBecauseModelVersion).eraseToAnyPublisher() }
+                guard let diagnosisDate = diagnosisCache.date, let diagnosis = DPDiagnosisModel.DiagnosisResult(rawValue: diagnosisCache.diagnosis) else { return Fail(error: RepositoryError.invalidStoreFormat).eraseToAnyPublisher() }
+
+                let result: DiagnosisResult = .init(date: diagnosisDate, diagnosis: diagnosis)
+
+                return Just(result).setFailureType(to: Error.self).eraseToAnyPublisher()
+            }
+            .eraseToAnyPublisher()
     }
 
     public func getHeartRate(from: Date, to: Date) -> AnyPublisher<[HeartRate], Error> {
@@ -120,14 +161,7 @@ final class DementiaPossibilityDiagnosisRepository{
 extension DementiaPossibilityDiagnosisRepository {
     enum RepositoryError: Error {
         case calenderFormatError
-    }
-}
-
-extension KeyValueStoreModel {
-    public static func diagnosisCacheGenerateId(date rawDate: Date) -> String {
-        let calendar = Calendar(identifier: .gregorian)
-        let date = calendar.startOfDay(for: rawDate)
-
-        return "diagnosis_result_\(date.description)" // FIXME:
+        case invalidStoreFormat
+        case shouldUpdateResultBecauseModelVersion
     }
 }

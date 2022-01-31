@@ -7,6 +7,9 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
     private var cancellables: [AnyCancellable] = []
 
     private let repository = DementiaPossibilityDiagnosisRepository()
+    private let userRepository = UserRepository.shared
+
+    private var userInfo = CurrentValueSubject<UserInfo?, Never>(nil)
 
     init() {
 
@@ -16,20 +19,43 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
         cancellables.forEach({ $0.cancel() })
         cancellables.removeAll()
 
-        repository.requestAuthorization()
-            .flatMap { [weak self] _ -> AnyPublisher<DiagnosisResult, Error> in
-                guard let self = self else { fatalError() /*TODO*/}
+        userRepository.$userInfo
+            .flatMap { [weak self] info -> AnyPublisher<UserInfo, Error> in
+                guard let info = info else { return Empty<UserInfo, Error>().eraseToAnyPublisher() }
 
-                let today = Date()
-                var publishers: [AnyPublisher<DiagnosisResult, Error>] = []
-                for i in 0..<20 {
-                    if let date = Calendar.current.date(byAdding: .day, value: -i, to: today) { //
-                        publishers.append(self.repository.getDPDiagnosisResult(date: date))
-                    }
+                return Just(info).setFailureType(to: Error.self).eraseToAnyPublisher()
+            }
+            .sink(
+                receiveCompletion: { _ in },
+                receiveValue: { [weak self] info in
+                    self?.userInfo.send(info)
                 }
+            )
+            .store(in: &cancellables)
 
-                return Publishers.MergeMany(publishers)
-                    .receive(on: DispatchQueue.main)
+        userInfo
+            .flatMap { [weak self] info -> AnyPublisher<DiagnosisResult, Error> in
+                guard let self = self else { fatalError() /*TODO*/}
+                guard let info = info else { return Empty<DiagnosisResult, Error>().eraseToAnyPublisher() }
+
+                return self.repository.requestAuthorization()
+                    .flatMap { [weak self] _ -> AnyPublisher<DiagnosisResult, Error> in
+                        guard let self = self else { fatalError() /*TODO*/}
+
+                        let today = Date()
+                        let passedDayFromStartUsingDay: Int = Int(today.timeIntervalSince(info.startUsingDate) / 86400)
+                        var publishers: [AnyPublisher<DiagnosisResult, Error>] = []
+
+                        for i in stride(from: passedDayFromStartUsingDay + Const.getResultDaysFromStartUsingDay, to: 0, by: -1) {
+                            if let date = Calendar.current.date(byAdding: .day, value: -i, to: today) {
+                                publishers.append(self.repository.getDPDiagnosisResult(date: date))
+                            }
+                        }
+
+                        return Publishers.MergeMany(publishers)
+                            .receive(on: DispatchQueue.main)
+                            .eraseToAnyPublisher()
+                    }
                     .eraseToAnyPublisher()
             }
             .sink(receiveCompletion: { completion in
@@ -44,6 +70,13 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
             .store(in: &cancellables)
 
         return .init()
+    }
+}
+
+extension DementiaPossibilityDiagnosisViewModel {
+    private enum Const {
+        // 初回利用から何日前までのデータを取得するか
+        static let getResultDaysFromStartUsingDay = 30
     }
 }
 

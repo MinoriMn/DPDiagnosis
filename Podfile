@@ -7,6 +7,9 @@ target 'DPDiagnosis' do
 
   # Pods for DPDiagnosis
   pod 'RealmSwift'
+  pod 'Charts'
+  pod 'ChartsRealm'
+  pod 'FSCalendar'
 
   target 'DPDiagnosisTests' do
     inherit! :search_paths

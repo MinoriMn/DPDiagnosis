@@ -2,6 +2,8 @@ import Combine
 import Foundation
 
 final class DPDiagnosisModel {
+    public static let version = "v0.1.1" //バージョンコード, Realmに対しては現在のバージョンコードと異なる場合に再計算を実施する
+
     private var matrix: [[Double]] = [[Double]]()
     private var sumY: [Double] = [Double]()
     private var currentCoefficient: [Double] = [Double]()
