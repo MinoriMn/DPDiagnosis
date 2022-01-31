@@ -3,6 +3,7 @@ import SwiftUI
 
 class DementiaPossibilityDiagnosisViewModel: ObservableObject {
     @Published var diagnosisResults: [DiagnosisResult] = []
+    @Published var selectedDate: AnyPublisher<Date, Error> = Empty<Date, Error>().eraseToAnyPublisher()
 
     private var cancellables: [AnyCancellable] = []
 
@@ -15,12 +16,12 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
 
     }
 
-    func transform(input: Input) -> Output {
+    func transform(input: Input) {
         cancellables.forEach({ $0.cancel() })
         cancellables.removeAll()
 
         userRepository.$userInfo
-            .flatMap { [weak self] info -> AnyPublisher<UserInfo, Error> in
+            .flatMap { info -> AnyPublisher<UserInfo, Error> in
                 guard let info = info else { return Empty<UserInfo, Error>().eraseToAnyPublisher() }
 
                 return Just(info).setFailureType(to: Error.self).eraseToAnyPublisher()
@@ -69,7 +70,7 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
             })
             .store(in: &cancellables)
 
-        return .init()
+        self.selectedDate = input.selectedDate // TODO:
     }
 }
 
@@ -83,10 +84,6 @@ extension DementiaPossibilityDiagnosisViewModel {
 
 extension DementiaPossibilityDiagnosisViewModel {
     struct Input {
-
-    }
-
-    struct Output {
-
+        let selectedDate: AnyPublisher<Date, Error>
     }
 }

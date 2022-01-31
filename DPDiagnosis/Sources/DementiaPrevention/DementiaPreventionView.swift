@@ -24,6 +24,12 @@ struct DementiaPreventionView: View {
                     Text(info.description)
                 }
             }
+            .background(
+                    Image("")
+                        .resizable()
+                        .edgesIgnoringSafeArea(.all)
+                        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                )
         }
     }
 }

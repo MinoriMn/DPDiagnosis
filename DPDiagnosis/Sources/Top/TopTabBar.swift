@@ -18,15 +18,17 @@ struct TopTabBar: View {
                 DementiaPossibilityDiagnosisView()
                     .tabItem {
                         VStack {
-                            Image(systemName: "a")
-                            Text("TabA")
+                            Image(systemName: "heart.text.square")
+                                .font(.title)
+                            Text("認知症可能性判定")
                         }
                 }.tag(1)
                 DementiaPreventionView()
                     .tabItem {
                         VStack {
-                            Image(systemName: "bold")
-                            Text("TabB")
+                            Image(systemName: "book")
+                                .font(.title)
+                            Text("予防知識")
                         }
                 }.tag(2)
             }

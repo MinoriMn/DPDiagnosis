@@ -1,22 +1,38 @@
 PODS:
-  - Realm (10.20.1):
-    - Realm/Headers (= 10.20.1)
-  - Realm/Headers (10.20.1)
-  - RealmSwift (10.20.1):
-    - Realm (= 10.20.1)
+  - Charts (3.4.0):
+    - Charts/Core (= 3.4.0)
+  - Charts/Core (3.4.0)
+  - ChartsRealm (3.4.0):
+    - Charts (~> 3.4.0)
+    - RealmSwift (~> 3.18.0)
+  - FSCalendar (2.8.2)
+  - Realm (3.18.0):
+    - Realm/Headers (= 3.18.0)
+  - Realm/Headers (3.18.0)
+  - RealmSwift (3.18.0):
+    - Realm (= 3.18.0)
 
 DEPENDENCIES:
+  - Charts
+  - ChartsRealm
+  - FSCalendar
   - RealmSwift
 
 SPEC REPOS:
   trunk:
+    - Charts
+    - ChartsRealm
+    - FSCalendar
     - Realm
     - RealmSwift
 
 SPEC CHECKSUMS:
-  Realm: fac5ecd031fcb81171627b74944c885662d4b266
-  RealmSwift: 9b02d25acb46a14756bde9893abb99e2e3675923
+  Charts: 74c9f256eaf0460c0c416522d1cf8c634ea6b286
+  ChartsRealm: 2ae8bf478211a94b3b6dd20738db0b9b132eb66b
+  FSCalendar: e6a2eb9c571bf0719ed797ef807e08426753c241
+  Realm: 7b3d04740facf45e958a514b466a32b04f1113d6
+  RealmSwift: c817b5f374668cf08f649afb05f55d92a787649c
 
-PODFILE CHECKSUM: 84bdf53eb0062a64492f83b30bc77f76a5ef8cb1
+PODFILE CHECKSUM: 5cdbc8ad50aac7005d57ee819778ed3c3edb315b
 
 COCOAPODS: 1.10.1
