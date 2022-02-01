@@ -2,36 +2,53 @@ import Combine
 import SwiftUI
 
 class CircadianRhythmViewModel: ObservableObject  {
-    @Published var graphData: GraphData? = nil
+    @Published var graphData: [GraphData] = []
 
     private var cancellables: [AnyCancellable] = []
 
+    private let repository = DementiaPossibilityDiagnosisRepository()
+
     init() {
+        mockCircadianRhythm()
     }
 
     public func transform(input: Input) {
-        cancellables.forEach({ $0.cancel() })
-        cancellables.removeAll()
+//        cancellables.forEach({ $0.cancel() })
+//        cancellables.removeAll()
 
         input.selectedDate
-            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] date in
-                self?.mockCircadianRhythm() //TODO
-            })
-            .store(in: &cancellables)
+            .flatMap { [weak self] date -> AnyPublisher<DiagnosisResult, Error> in
+                guard let self = self else { fatalError() /*TODO*/ }
+                return self.repository.getDPDiagnosisResult(date: date)
+            }
+            .map { result -> [GraphData] in
+                let heartRate: [HeartRate] = (result.log ?? []).map { log -> HeartRate in
+                    .init(id: DateUtils.stringFromDate(date: log.date, format: "yyyyMMddHHmmss") + "_hr", startDatetime: log.date, endDatetime: log.date, value: log.heartRate)
+                }
+                let plots: [CircadianRhythmPlot] = (result.estimatedHR ?? []).map { estimatedHR -> CircadianRhythmPlot in
+                        .init(time: estimatedHR.date, coefficients: [], estimatedHeartRate: estimatedHR.estimatedHeartRate) // TODO: coefficients
+                }
+                let estimatedCircadianRhythm: EstimatedCircadianRhythm = .init(id: DateUtils.stringFromDate(date: heartRate.first!.startDatetime, format: "yyyyMMddHHmmss") + "_hr", startDatetime: heartRate.first!.startDatetime, endDatetime: heartRate.last!.startDatetime, periods: [], plots: plots) // TODO: periods
 
-        mockCircadianRhythm() //TODO
+                return [.init(
+                    heartRateData: heartRate,
+                    estimatedCircadianRhythm: estimatedCircadianRhythm
+                )]
+            }
+            .replaceError(with: [])
+            .receive(on: DispatchQueue.main)
+            .assign(to: &self.$graphData)
     }
 }
 
-extension CircadianRhythmViewModel {
-    struct GraphData {
-        let heartRateData: [HeartRate]
-        let estimatedCircadianRhythm: EstimatedCircadianRhythm?
+struct GraphData: Identifiable, Hashable {
+    let id = UUID()
+    let heartRateData: [HeartRate]
+    let estimatedCircadianRhythm: EstimatedCircadianRhythm?
 
-        init(heartRateData: [HeartRate], estimatedCircadianRhythm: EstimatedCircadianRhythm) {
-            self.heartRateData = heartRateData
-            self.estimatedCircadianRhythm = estimatedCircadianRhythm
-        }
+    init(heartRateData: [HeartRate], estimatedCircadianRhythm: EstimatedCircadianRhythm) {
+        self.heartRateData = heartRateData
+        self.estimatedCircadianRhythm = estimatedCircadianRhythm
     }
 }
 
@@ -65,15 +82,17 @@ extension CircadianRhythmViewModel {
                 )
             ])
 
-        self.graphData = .init(
-            heartRateData: heartRateData,
-            estimatedCircadianRhythm: estimatedCircadianRhythm
-        )
+        self.graphData = [
+            .init(
+                heartRateData: heartRateData,
+                estimatedCircadianRhythm: estimatedCircadianRhythm
+            )
+        ]
     }
 }
 
 extension CircadianRhythmViewModel {
     struct Input {
-        let selectedDate: AnyPublisher<Date, Error>
+        let selectedDate: AnyPublisher<Date, Never>
     }
 }

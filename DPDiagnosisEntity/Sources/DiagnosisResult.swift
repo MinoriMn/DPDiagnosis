@@ -3,10 +3,14 @@ import SwiftUI
 struct DiagnosisResult: Codable, Hashable {
     let date: Date
     let diagnosis: DPDiagnosisModel.DiagnosisResult
+    let log: [DPDiagnosisModel.Log]?
+    let estimatedHR: [DPDiagnosisModel.EstimatedHeartRate]?
 
-    init(date: Date, diagnosis: DPDiagnosisModel.DiagnosisResult) {
+    init(date: Date, diagnosis: DPDiagnosisModel.DiagnosisResult, log: [DPDiagnosisModel.Log]?, estimatedHR: [DPDiagnosisModel.EstimatedHeartRate]?) {
         self.date = date
         self.diagnosis = diagnosis
+        self.log = log
+        self.estimatedHR = estimatedHR
     }
 }
 

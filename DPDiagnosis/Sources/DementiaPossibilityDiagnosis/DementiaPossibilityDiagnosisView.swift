@@ -4,17 +4,20 @@ import SwiftUI
 struct DementiaPossibilityDiagnosisView: View {
     @ObservedObject var viewModel = DementiaPossibilityDiagnosisViewModel()
 
-    private let selectedDate = PassthroughSubject<Date, Error>()
+    private let selectedDate = PassthroughSubject<Date, Never>()
 
     private var cancellables: [AnyCancellable] = []
 
     init() {
         bind()
+
+        //DEBUG
+        
     }
 
     private func bind() {
         viewModel.transform(input: .init(
-            selectedDate: selectedDate.eraseToAnyPublisher()
+            selectedDate: selectedDate
         ))
     }
 
@@ -24,7 +27,7 @@ struct DementiaPossibilityDiagnosisView: View {
                 VStack(alignment: .center) {
                     HStack {
                         Text("あなたの\n認知症可能性")
-                            .font(.title2)
+                            .font(.largeTitle)
                         Spacer()
                         Image("dementia_rate_high")
                             .resizable()
@@ -40,35 +43,38 @@ struct DementiaPossibilityDiagnosisView: View {
 
                 }
             }
-            Section (header: Text("1月1日の記録").font(.title2)) {
+            Section (header: Text(DateUtils.stringFromDate(date: viewModel.currentDate, format: "M/d") + "の記録").font(.title)) {
                 VStack(alignment: .center) {
                     HStack {
                         Text("概日リズム")
-                            .font(.caption)
+                            .font(.title2)
                         Button(action: {
                             }){
                                 Text("i")
-                                   .font(.largeTitle)
+                                   .font(.title) //TODO
                             }
                         Spacer()
                     }
                     HStack(alignment: .lastTextBaseline) {
                         Text("100")
-                            .font(.title)
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
                             .foregroundColor(.blue)
                         Text("/100")
-                            .font(.caption)
+                            .font(.headline)
+                            .fontWeight(.medium)
                         Text("非常に安定している")
-                            .font(.caption)
+                            .font(.headline)
                         Spacer()
                     }
                     HStack {
                         CircadianRhythmGraphView(input: .init(datePublisher: viewModel.selectedDate))
                             .frame(width: .infinity, height: 300, alignment: .center)
+
                     }
                     HStack {
                         Text("記録したデータ")
-                            .font(.caption)
+                            .font(.title2)
                         Spacer()
                     }
                 }

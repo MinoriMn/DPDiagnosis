@@ -19,8 +19,8 @@ final class DPDiagnosisModel {
         self.coefficientHistory = []
     }
 
-    public func dementiaPossibilityDiagnosis(heartRate: [HeartRate], progressPublisher: PassthroughSubject<(currentProcess: Int, totalProcess: Int), Error>?) -> AnyPublisher<DiagnosisResult, Error> {
-        Future<DiagnosisResult, Error>(){ [weak self] promise in
+    public func dementiaPossibilityDiagnosis(heartRate: [HeartRate], progressPublisher: PassthroughSubject<(currentProcess: Int, totalProcess: Int), Error>?) -> AnyPublisher<(DiagnosisResult, [Log], [EstimatedHeartRate]), Error> {
+        Future<(DiagnosisResult, [Log], [EstimatedHeartRate]), Error>(){ [weak self] promise in
             guard let self = self, heartRate.count >= Const.minHeartRateData, let firstHeartRate = heartRate.first else {
                 promise(.failure(ModelError.receiveFewHeartRateData))
                 return
@@ -31,15 +31,29 @@ final class DPDiagnosisModel {
             self.resetParameter()
             self.currentCoefficient = [Double](repeating: 0, count: Const.numCoefficient) // TODO: 0以外の初期値も設定可能に
 
+            var log: [Log] = []
+
             for (dataIndex, hr) in zip(heartRate.indices, heartRate) {
                 self.calcCoefficients(hr: hr, dataIndex: dataIndex)
+                log.append(.init(date: hr.startDatetime, heartRate: hr.value, coefficients: self.currentCoefficient))
             }
 
-            promise(.success(self.diagnosisWithUCRADD()))
+            let firstTime = firstHeartRate.startDatetime
+            let sleepingTime = heartRate[heartRate.count - 1].endDatetime.timeIntervalSince(firstTime)
+            var estimatedHR: [EstimatedHeartRate] = []
+
+            for time in stride(from: 0, to: sleepingTime + 1, by: 5 * 60) { // TODO: 5分以外も指定可能に
+                let members = Array(0..<Const.numCoefficient)
+                    .map { [weak self] i -> Double in
+                        guard let self = self else { return 0 }
+                        return self.currentCoefficient[i] * self.sincos(x: time, coeffIndex: i)
+                    }
+                estimatedHR.append(.init(date: firstHeartRate.startDatetime.addingTimeInterval(time), estimatedHeartRate: members.reduce(0, +)))
+            }
+
+            promise(.success((self.diagnosisWithUCRADD(), log, estimatedHR)))
         }
         .eraseToAnyPublisher()
-
-
     }
 
     public func diagnosisWithUCRADD() -> DiagnosisResult {
@@ -106,6 +120,15 @@ extension DPDiagnosisModel {
         } else {
             return cos(2.0 * Double.pi * x / Const.periods[coeffIndex / 2])
         }
+    }
+
+    public func getMembersLabel() -> [String] {
+        var labels: [String] = []
+        for i in 0..<Const.periods.count {
+            labels.append(contentsOf: ["sin_\(Int(Const.periods[i]))", "cos_\(Int(Const.periods[i]))"])
+        }
+        labels.append("C")
+        return labels
     }
 
     private func calcCoefficients(hr: HeartRate, dataIndex: Int) {
@@ -208,6 +231,19 @@ extension DPDiagnosisModel {
         case alzheimerDementiaPossibility = "alzheimerDementiaPossibility"
         case healthyPersonPossibility = "healthyPersonPossibility"
         case noResult = "noResult"
+    }
+}
+
+extension DPDiagnosisModel {
+    public struct Log: Codable, Hashable {
+        var date: Date
+        var heartRate: Double
+        var coefficients: [Double]
+    }
+
+    public struct EstimatedHeartRate: Codable, Hashable {
+        var date: Date
+        var estimatedHeartRate: Double
     }
 }
 

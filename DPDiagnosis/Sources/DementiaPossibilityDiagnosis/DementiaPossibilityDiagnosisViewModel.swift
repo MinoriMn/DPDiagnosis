@@ -3,7 +3,8 @@ import SwiftUI
 
 class DementiaPossibilityDiagnosisViewModel: ObservableObject {
     @Published var diagnosisResults: [DiagnosisResult] = []
-    @Published var selectedDate: AnyPublisher<Date, Error> = Empty<Date, Error>().eraseToAnyPublisher()
+    @Published var selectedDate: AnyPublisher<Date, Never> = Empty<Date, Never>().eraseToAnyPublisher()
+    @Published var currentDate: Date = Date()
 
     private var cancellables: [AnyCancellable] = []
 
@@ -35,12 +36,12 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
             .store(in: &cancellables)
 
         userInfo
-            .flatMap { [weak self] info -> AnyPublisher<DiagnosisResult, Error> in
+            .flatMap { [weak self] info -> AnyPublisher<[DiagnosisResult], Error> in
                 guard let self = self else { fatalError() /*TODO*/}
-                guard let info = info else { return Empty<DiagnosisResult, Error>().eraseToAnyPublisher() }
+                guard let info = info else { return Empty<[DiagnosisResult], Error>().eraseToAnyPublisher() }
 
                 return self.repository.requestAuthorization()
-                    .flatMap { [weak self] _ -> AnyPublisher<DiagnosisResult, Error> in
+                    .flatMap { [weak self] _ -> AnyPublisher<[DiagnosisResult], Error> in
                         guard let self = self else { fatalError() /*TODO*/}
 
                         let today = Date()
@@ -49,11 +50,14 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
 
                         for i in stride(from: passedDayFromStartUsingDay + Const.getResultDaysFromStartUsingDay, to: 0, by: -1) {
                             if let date = Calendar.current.date(byAdding: .day, value: -i, to: today) {
-                                publishers.append(self.repository.getDPDiagnosisResult(date: date))
+                                publishers.append(
+                                    self.repository.getDPDiagnosisResult(date: date)
+                                )
                             }
                         }
 
                         return Publishers.MergeMany(publishers)
+                            .collect()
                             .receive(on: DispatchQueue.main)
                             .eraseToAnyPublisher()
                     }
@@ -65,25 +69,34 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
                 case .failure(let error):
                     print("DPDiagnosisError: \(error)")
                 }
-            }, receiveValue: { [weak self] diagnosisResult in
-                self?.diagnosisResults.append(diagnosisResult)
+            }, receiveValue: { [weak self] diagnosisResults in
+                self?.diagnosisResults = diagnosisResults.filter { $0.diagnosis != .noResult }.sorted(by: { $0.date.timeIntervalSince1970 > $1.date.timeIntervalSince1970 })
+                if let date = self?.diagnosisResults.first?.date {
+                    input.selectedDate.send(date)
+                }
             })
             .store(in: &cancellables)
 
-        self.selectedDate = input.selectedDate // TODO:
+        self.selectedDate = input.selectedDate.eraseToAnyPublisher() // TODO:
+
+        self.selectedDate
+            .sink { [weak self] date in
+                self?.currentDate = date // TODO
+            }
+            .store(in: &cancellables)
     }
 }
 
 extension DementiaPossibilityDiagnosisViewModel {
     private enum Const {
         // 初回利用から何日前までのデータを取得するか
-        static let getResultDaysFromStartUsingDay = 30
+        static let getResultDaysFromStartUsingDay = 60
     }
 }
 
 
 extension DementiaPossibilityDiagnosisViewModel {
     struct Input {
-        let selectedDate: AnyPublisher<Date, Error>
+        let selectedDate: PassthroughSubject<Date, Never>
     }
 }

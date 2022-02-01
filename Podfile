@@ -10,6 +10,7 @@ target 'DPDiagnosis' do
   pod 'Charts'
   pod 'ChartsRealm'
   pod 'FSCalendar'
+  pod "SwiftCSV"
 
   target 'DPDiagnosisTests' do
     inherit! :search_paths
