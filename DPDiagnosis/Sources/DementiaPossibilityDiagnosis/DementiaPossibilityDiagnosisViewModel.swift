@@ -3,8 +3,10 @@ import SwiftUI
 
 class DementiaPossibilityDiagnosisViewModel: ObservableObject {
     @Published var diagnosisResults: [DiagnosisResult] = []
-    @Published var selectedDate: AnyPublisher<Date, Never> = Empty<Date, Never>().eraseToAnyPublisher()
+    @Published var selectedDate: Date = Date()
     @Published var currentDate: Date = Date()
+    @Published var existDataDate: [Date] = []
+    private var existDataDateString: [String] = []
 
     private var cancellables: [AnyCancellable] = []
 
@@ -12,6 +14,7 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
     private let userRepository = UserRepository.shared
 
     private var userInfo = CurrentValueSubject<UserInfo?, Never>(nil)
+    var selectedDatePublisher: AnyPublisher<Date, Never> = Empty<Date, Never>().eraseToAnyPublisher()
 
     init() {
 
@@ -71,19 +74,22 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
                 }
             }, receiveValue: { [weak self] diagnosisResults in
                 self?.diagnosisResults = diagnosisResults.filter { $0.diagnosis != .noResult }.sorted(by: { $0.date.timeIntervalSince1970 > $1.date.timeIntervalSince1970 })
+                self?.existDataDate = diagnosisResults.filter { $0.diagnosis != .noResult }.map { $0.date }
+                self?.existDataDateString = self?.existDataDate.map { DateUtils.stringFromDate(date: $0, format: "yyyyMMdd") } ?? []
                 if let date = self?.diagnosisResults.first?.date {
-                    input.selectedDate.send(date)
+                    input.selectedDatePublisher.send(date)
                 }
             })
             .store(in: &cancellables)
 
-        self.selectedDate = input.selectedDate.eraseToAnyPublisher() // TODO:
-
-        self.selectedDate
-            .sink { [weak self] date in
-                self?.currentDate = date // TODO
+        self.selectedDatePublisher = input.selectedDatePublisher
+            .flatMap { [weak self] date -> AnyPublisher<Date, Never> in
+                guard let self = self, self.existDataDateString.contains(DateUtils.stringFromDate(date: date, format: "yyyyMMdd")) else { return Empty<Date, Never>().eraseToAnyPublisher() }
+                self.currentDate = date
+                print("calledAAAAA")
+                return Just(date).eraseToAnyPublisher()
             }
-            .store(in: &cancellables)
+            .eraseToAnyPublisher()
     }
 }
 
@@ -97,6 +103,6 @@ extension DementiaPossibilityDiagnosisViewModel {
 
 extension DementiaPossibilityDiagnosisViewModel {
     struct Input {
-        let selectedDate: PassthroughSubject<Date, Never>
+        let selectedDatePublisher: PassthroughSubject<Date, Never>
     }
 }

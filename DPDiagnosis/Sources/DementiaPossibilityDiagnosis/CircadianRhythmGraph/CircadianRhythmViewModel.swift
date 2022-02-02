@@ -13,8 +13,8 @@ class CircadianRhythmViewModel: ObservableObject  {
     }
 
     public func transform(input: Input) {
-//        cancellables.forEach({ $0.cancel() })
-//        cancellables.removeAll()
+        cancellables.forEach({ $0.cancel() })
+        cancellables.removeAll()
 
         input.selectedDate
             .flatMap { [weak self] date -> AnyPublisher<DiagnosisResult, Error> in
