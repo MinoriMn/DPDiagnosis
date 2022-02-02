@@ -2,8 +2,7 @@ import Combine
 import SwiftUI
 
 class DementiaPossibilityDiagnosisViewModel: ObservableObject {
-    @Published var diagnosisResults: [DiagnosisResult] = []
-    @Published var selectedDate: Date = Date()
+    private var diagnosisResults: [DiagnosisResult] = []
     @Published var currentDate: Date = Date()
     @Published var existDataDate: [Date] = []
     private var existDataDateString: [String] = []
@@ -84,9 +83,9 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
 
         self.selectedDatePublisher = input.selectedDatePublisher
             .flatMap { [weak self] date -> AnyPublisher<Date, Never> in
-                guard let self = self, self.existDataDateString.contains(DateUtils.stringFromDate(date: date, format: "yyyyMMdd")) else { return Empty<Date, Never>().eraseToAnyPublisher() }
+                guard let self = self, self.currentDate != date, self.existDataDateString.contains(DateUtils.stringFromDate(date: date, format: "yyyyMMdd")) else { return Empty<Date, Never>().eraseToAnyPublisher() }
                 self.currentDate = date
-                print("calledAAAAA")
+                print("calledAAAAA", date)
                 return Just(date).eraseToAnyPublisher()
             }
             .eraseToAnyPublisher()
@@ -103,6 +102,6 @@ extension DementiaPossibilityDiagnosisViewModel {
 
 extension DementiaPossibilityDiagnosisViewModel {
     struct Input {
-        let selectedDatePublisher: PassthroughSubject<Date, Never>
+        let selectedDatePublisher: CurrentValueSubject<Date, Never>
     }
 }

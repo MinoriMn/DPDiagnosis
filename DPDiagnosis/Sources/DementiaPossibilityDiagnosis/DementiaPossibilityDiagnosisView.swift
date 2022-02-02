@@ -5,7 +5,7 @@ import FSCalendar
 struct DementiaPossibilityDiagnosisView: View {
     @ObservedObject var viewModel = DementiaPossibilityDiagnosisViewModel()
 
-    private let selectedDatePass = PassthroughSubject<Date, Never>()
+    private let selectedDatePass = CurrentValueSubject<Date, Never>(Date())
 
     private var cancellables: [AnyCancellable] = []
 
@@ -80,7 +80,7 @@ struct DementiaPossibilityDiagnosisView: View {
                         Spacer()
                     }
                     HStack {
-                        CalendarTestView(selectedDate: $viewModel.selectedDate, existDataDate: $viewModel.existDataDate)
+                        CalendarTestView(selectedDate: selectedDatePass, existDataDate: $viewModel.existDataDate)
                             .frame(height: 400)
                     }
                 }
@@ -91,7 +91,7 @@ struct DementiaPossibilityDiagnosisView: View {
 
 extension DementiaPossibilityDiagnosisView {
     struct CalendarTestView: UIViewRepresentable {
-        @Binding var selectedDate: Date
+        let selectedDate: CurrentValueSubject<Date, Never>
         @Binding var existDataDate: [Date]
 
         func makeUIView(context: Context) -> UIView {
@@ -168,7 +168,7 @@ extension DementiaPossibilityDiagnosisView {
             }
 
             func calendar(_ calendar: FSCalendar, didSelect date: Date, at monthPosition: FSCalendarMonthPosition) {
-                parent.selectedDate = date
+                parent.selectedDate.send(date)
             }
         }
     }
