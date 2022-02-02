@@ -36,7 +36,6 @@ class CircadianRhythmViewModel: ObservableObject  {
                 )]
             }
             .replaceError(with: [])
-            .receive(on: DispatchQueue.main)
             .assign(to: &self.$graphData)
     }
 }
@@ -55,9 +54,11 @@ struct GraphData: Identifiable, Hashable {
 extension CircadianRhythmViewModel {
     private func mockCircadianRhythm() {
         let heartRateData: [HeartRate] = [
-            .init(id: "a", startDatetime: DateUtils.dateFromString(string: "2020/01/01 20:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), endDatetime: DateUtils.dateFromString(string: "2020/01/01 20:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), value: 60),
-            .init(id: "b", startDatetime: DateUtils.dateFromString(string: "2020/01/01 22:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), endDatetime: DateUtils.dateFromString(string: "2020/01/01 22:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), value: 66),
-            .init(id: "c", startDatetime: DateUtils.dateFromString(string: "2020/01/01 23:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), endDatetime: DateUtils.dateFromString(string: "2020/01/01 23:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), value: 70)
+            .init(id: "a", startDatetime: DateUtils.dateFromString(string: "2020/01/01 20:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), endDatetime: DateUtils.dateFromString(string: "2020/01/01 20:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), value: 70 + Double.random(in: 1..<10)),
+            .init(id: "b", startDatetime: DateUtils.dateFromString(string: "2020/01/01 22:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), endDatetime: DateUtils.dateFromString(string: "2020/01/01 22:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), value: 65 + Double.random(in: 1..<10)),
+            .init(id: "b", startDatetime: DateUtils.dateFromString(string: "2020/01/02 00:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), endDatetime: DateUtils.dateFromString(string: "2020/01/02 00:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), value: 55 + Double.random(in: 1..<10)),
+            .init(id: "c", startDatetime: DateUtils.dateFromString(string: "2020/01/02 03:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), endDatetime: DateUtils.dateFromString(string: "2020/01/02 03:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), value: 50 + Double.random(in: 1..<10)),
+            .init(id: "d", startDatetime: DateUtils.dateFromString(string: "2020/01/02 05:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), endDatetime: DateUtils.dateFromString(string: "2020/01/02 05:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(), value: 50 + Double.random(in: 1..<10))
         ]
         let estimatedCircadianRhythm: EstimatedCircadianRhythm = .init(
             id: "d",
@@ -68,26 +69,30 @@ extension CircadianRhythmViewModel {
                 .init(
                     time: DateUtils.dateFromString(string: "2020/01/01 20:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(),
                     coefficients: [],
-                    estimatedHeartRate: 50
+                    estimatedHeartRate: 70 + Double.random(in: 1..<10)
                 ),
                 .init(
-                    time: DateUtils.dateFromString(string: "2020/01/01 20:05:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(),
+                    time: DateUtils.dateFromString(string: "2020/01/01 22:30:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(),
                     coefficients: [],
-                    estimatedHeartRate: 60
+                    estimatedHeartRate: 60 + Double.random(in: 1..<10)
                 ),
                 .init(
-                    time: DateUtils.dateFromString(string: "2020/01/01 20:15:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(),
+                    time: DateUtils.dateFromString(string: "2020/01/02 02:30:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(),
                     coefficients: [],
-                    estimatedHeartRate: 70
+                    estimatedHeartRate: 50 + Double.random(in: 1..<10)
+                ),
+                .init(
+                    time: DateUtils.dateFromString(string: "2020/01/02 05:00:00", format: "yyyy/MM/dd HH:mm:ss") ?? Date(),
+                    coefficients: [],
+                    estimatedHeartRate: 52 + Double.random(in: 1..<10)
                 )
             ])
 
-        self.graphData = [
-            .init(
-                heartRateData: heartRateData,
-                estimatedCircadianRhythm: estimatedCircadianRhythm
-            )
-        ]
+        self.graphData.removeAll()
+        self.graphData.append(.init(
+            heartRateData: heartRateData,
+            estimatedCircadianRhythm: estimatedCircadianRhythm
+        ))
     }
 }
 

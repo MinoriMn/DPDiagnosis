@@ -85,7 +85,6 @@ class DementiaPossibilityDiagnosisViewModel: ObservableObject {
             .flatMap { [weak self] date -> AnyPublisher<Date, Never> in
                 guard let self = self, self.currentDate != date, self.existDataDateString.contains(DateUtils.stringFromDate(date: date, format: "yyyyMMdd")) else { return Empty<Date, Never>().eraseToAnyPublisher() }
                 self.currentDate = date
-                print("calledAAAAA", date)
                 return Just(date).eraseToAnyPublisher()
             }
             .eraseToAnyPublisher()

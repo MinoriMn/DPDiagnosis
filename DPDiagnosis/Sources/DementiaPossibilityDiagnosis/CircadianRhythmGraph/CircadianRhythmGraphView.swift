@@ -19,10 +19,8 @@ struct CircadianRhythmGraphView: View {
     }
 
     var body: some View {
-        if let graphData = viewModel.graphData.first {
-            CircadianRhythmChartView(graphData: graphData)
-                .frame(width: .infinity, height: 300, alignment: .center)
-        }
+        CircadianRhythmChartView(graphData: $viewModel.graphData)
+            .frame(width: .infinity, height: 300, alignment: .center)
     }
 }
 
@@ -40,20 +38,21 @@ extension CircadianRhythmGraphView {
 
 extension CircadianRhythmGraphView {
     struct CircadianRhythmChartView: View {
-        let graphData: GraphData
+        @Binding var graphData: [GraphData]
 
         var body: some View {
-            CircadianRhythmChart(graphData)
+            Group {
+                if let graphData = graphData.first {
+                    CircadianRhythmChart(graphData: graphData)
+                } else {
+                    Text("")
+                }
+            }
         }
     }
 
     struct CircadianRhythmChart : UIViewRepresentable {
-        let graphData: GraphData
-
-        init(_ graphData: GraphData) {
-            print("called", graphData)
-            self.graphData = graphData
-        }
+        var graphData: GraphData
 
         func makeUIView(context: Context) -> LineChartView {
             let chartView = LineChartView()
@@ -69,7 +68,12 @@ extension CircadianRhythmGraphView {
         }
 
         func updateUIView(_ chartView: LineChartView, context: Context) {
-           // 値が更新された時に呼び出される処理
+            guard let estimatedCircadianRhythm = graphData.estimatedCircadianRhythm,
+                  !graphData.heartRateData.isEmpty else {
+                return
+            }
+
+            setData(chartView: chartView, graphData: graphData, estimatedCircadianRhythm: estimatedCircadianRhythm)
         }
 
         private func setData(chartView: LineChartView, graphData: GraphData, estimatedCircadianRhythm: EstimatedCircadianRhythm) {
